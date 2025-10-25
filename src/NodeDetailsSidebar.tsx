@@ -1,12 +1,15 @@
 import type { Node, Edge } from './data';
+import type { PropagationResult } from './utils/riskPropagation';
+
 
 interface NodeDetailsSidebarProps {
     node: Node | null;
     connections: { incoming: Edge[]; outgoing: Edge[] };
     onClose: () => void;
+    propagationResult?: PropagationResult | null;
 }
 
-export function NodeDetailsSidebar({ node, connections, onClose }: NodeDetailsSidebarProps) {
+export function NodeDetailsSidebar({ node, connections, onClose, propagationResult }: NodeDetailsSidebarProps) {
     if (!node) return null;
 
     const getSeverityColor = (severity?: string) => {
@@ -26,6 +29,16 @@ export function NodeDetailsSidebar({ node, connections, onClose }: NodeDetailsSi
         return '#84cc16';
     };
 
+    const getImpactColor = (level?: string) => {
+        switch (level) {
+            case 'critical': return '#ef4444';
+            case 'high': return '#f97316';
+            case 'medium': return '#f59e0b';
+            case 'low': return '#84cc16';
+            default: return '#64748b';
+        }
+    };
+
     return (
         <div className="sidebar">
             <div className="sidebar-header">
@@ -42,6 +55,53 @@ export function NodeDetailsSidebar({ node, connections, onClose }: NodeDetailsSi
 
                 {node.description && (
                     <p className="node-description">{node.description}</p>
+                )}
+
+                {propagationResult && (
+                    <div className="propagation-info">
+                        <div className="propagation-header">
+                            <span className="propagation-icon">🔴</span>
+                            <h4>Risk Propagation Active</h4>
+                        </div>
+                        <div className="propagation-stats">
+                            <div className="prop-stat">
+                                <span className="prop-label">Affected Entities</span>
+                                <span className="prop-value">{propagationResult.affectedCount}</span>
+                            </div>
+                            <div className="prop-stat">
+                                <span className="prop-label">Impact Level</span>
+                                <span
+                                    className="prop-value impact-badge"
+                                    style={{
+                                        background: getImpactColor(propagationResult.impactLevel),
+                                        color: '#fff',
+                                        padding: '0.25rem 0.5rem',
+                                        borderRadius: '0.25rem',
+                                        fontSize: '0.75rem',
+                                        fontWeight: 700
+                                    }}
+                                >
+                                    {propagationResult.impactLevel.toUpperCase()}
+                                </span>
+                            </div>
+                        </div>
+
+                        {propagationResult.propagationPaths.size > 0 && (
+                            <div className="propagation-paths">
+                                <h5>Propagation Paths</h5>
+                                <div className="path-list">
+                                    {Array.from(propagationResult.propagationPaths.entries())
+                                        .slice(0, 5)
+                                        .map(([, path], idx) => (
+                                            <div key={idx} className="path-item">
+                                                <span className="path-icon">→</span>
+                                                <span className="path-text">{path.length} hops</span>
+                                            </div>
+                                        ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 )}
 
                 <div className="risk-section">
